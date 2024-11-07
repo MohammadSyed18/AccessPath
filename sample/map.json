@@ -1,0 +1,1 @@
+{"nodes":["entrance","stairs-landing","ramp-corner","lobby"],"edges":[{"from":"entrance","to":"stairs-landing","distance":8,"kind":"stairs"},{"from":"stairs-landing","to":"lobby","distance":5},{"from":"entrance","to":"ramp-corner","distance":13,"kind":"ramp","surface":0.1},{"from":"ramp-corner","to":"lobby","distance":9,"kind":"path","surface":0.1}]}
