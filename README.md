@@ -14,3 +14,7 @@ npm run build
 ```
 
 the maps are synthetic. there is no GPS or live closure feed, so this is a prototype for exploring routing constraints, not a navigation safety service.
+
+## Implementation details
+
+Multi-stop itineraries are available through `route_via(graph, stops, constraints)`. Every leg uses the same mobility restrictions, and invalid or non-finite edge weights are rejected before routing.

@@ -1,30 +1,128 @@
 from __future__ import annotations
-import heapq,json
-from dataclasses import dataclass,asdict
+import heapq, json, math
+from dataclasses import dataclass, asdict
 from pathlib import Path
+
+
 @dataclass(frozen=True)
-class Edge: to:str;distance:float;kind:str="path";surface:float=0;closed:bool=False
+class Edge:
+    to: str
+    distance: float
+    kind: str = "path"
+    surface: float = 0
+    closed: bool = False
+
+
 @dataclass(frozen=True)
-class Constraints: avoid_stairs:bool=False;avoid_elevators:bool=False;max_surface:float=1;distance_weight:float=1;difficulty_weight:float=4
-class NoRoute(Exception):pass
-def load(path:Path):
- raw=json.loads(path.read_text());g={str(n):[] for n in raw["nodes"]}
- for e in raw["edges"]:
-  if e["from"] not in g or e["to"] not in g:raise ValueError("edge references unknown node")
-  edge=Edge(e["to"],e["distance"],e.get("kind","path"),e.get("surface",0),e.get("closed",False));g[e["from"]].append(edge)
-  if e.get("bidirectional",True):g[e["to"]].append(Edge(e["from"],edge.distance,edge.kind,edge.surface,edge.closed))
- return g
-def route(graph,start,end,c=Constraints()):
- if start not in graph or end not in graph:raise ValueError("unknown endpoint")
- q=[(0.,0.,start,[])];best={start:0.}
- while q:
-  cost,distance,node,steps=heapq.heappop(q)
-  if node==end:
-   kinds=[e.kind for _,e in steps];reasons=[f"avoided stairs" for _ in [0] if c.avoid_stairs]+[f"selected {round(distance,1)} distance units with surface penalty {round(cost-c.distance_weight*distance,1)}"]
-   return {"nodes":[start]+[n for n,_ in steps],"distance":round(distance,3),"cost":round(cost,3),"features":kinds,"explanation":"; ".join(reasons)}
-  if cost>best.get(node,float("inf")):continue
-  for e in graph[node]:
-   if e.closed or e.surface>c.max_surface or (c.avoid_stairs and e.kind=="stairs") or (c.avoid_elevators and e.kind=="elevator"):continue
-   score=cost+c.distance_weight*e.distance+c.difficulty_weight*e.surface
-   if score<best.get(e.to,float("inf")):best[e.to]=score;heapq.heappush(q,(score,distance+e.distance,e.to,steps+[(e.to,e)]))
- raise NoRoute(f"no route from {start} to {end} satisfies the selected constraints")
+class Constraints:
+    avoid_stairs: bool = False
+    avoid_elevators: bool = False
+    max_surface: float = 1
+    distance_weight: float = 1
+    difficulty_weight: float = 4
+
+
+class NoRoute(Exception):
+    pass
+
+
+def load(path: Path):
+    raw = json.loads(path.read_text())
+    g = {str(n): [] for n in raw["nodes"]}
+    for e in raw["edges"]:
+        if e["from"] not in g or e["to"] not in g:
+            raise ValueError("edge references unknown node")
+        edge = Edge(
+            e["to"],
+            e["distance"],
+            e.get("kind", "path"),
+            e.get("surface", 0),
+            e.get("closed", False),
+        )
+        g[e["from"]].append(edge)
+        if e.get("bidirectional", True):
+            g[e["to"]].append(
+                Edge(e["from"], edge.distance, edge.kind, edge.surface, edge.closed)
+            )
+    return g
+
+
+def route(graph, start, end, c=Constraints()):
+    if start not in graph or end not in graph:
+        raise ValueError("unknown endpoint")
+    if (
+        not all(
+            math.isfinite(x)
+            for x in (c.max_surface, c.distance_weight, c.difficulty_weight)
+        )
+        or not 0 <= c.max_surface <= 1
+        or c.distance_weight < 0
+        or c.difficulty_weight < 0
+    ):
+        raise ValueError("invalid routing constraints")
+    for node, edges in graph.items():
+        for e in edges:
+            if (
+                e.to not in graph
+                or not math.isfinite(e.distance)
+                or e.distance <= 0
+                or not math.isfinite(e.surface)
+                or not 0 <= e.surface <= 1
+            ):
+                raise ValueError("invalid edge at " + str(node))
+    q = [(0.0, 0.0, start, [])]
+    best = {start: 0.0}
+    while q:
+        cost, distance, node, steps = heapq.heappop(q)
+        if node == end:
+            kinds = [e.kind for _, e in steps]
+            reasons = [f"avoided stairs" for _ in [0] if c.avoid_stairs] + [
+                f"selected {round(distance,1)} distance units with surface penalty {round(cost-c.distance_weight*distance,1)}"
+            ]
+            return {
+                "nodes": [start] + [n for n, _ in steps],
+                "distance": round(distance, 3),
+                "cost": round(cost, 3),
+                "features": kinds,
+                "explanation": "; ".join(reasons),
+            }
+        if cost > best.get(node, float("inf")):
+            continue
+        for e in graph[node]:
+            if (
+                e.closed
+                or e.surface > c.max_surface
+                or (c.avoid_stairs and e.kind == "stairs")
+                or (c.avoid_elevators and e.kind == "elevator")
+            ):
+                continue
+            score = (
+                cost + c.distance_weight * e.distance + c.difficulty_weight * e.surface
+            )
+            if score < best.get(e.to, float("inf")):
+                best[e.to] = score
+                heapq.heappush(
+                    q, (score, distance + e.distance, e.to, steps + [(e.to, e)])
+                )
+    raise NoRoute(f"no route from {start} to {end} satisfies the selected constraints")
+
+
+def route_via(graph, stops, constraints=Constraints()):
+    """Route an ordered itinerary using the same mobility constraints per leg."""
+    stops = list(stops)
+    if len(stops) < 2:
+        raise ValueError("at least two stops required")
+    legs = []
+    for index, (start, end) in enumerate(zip(stops, stops[1:])):
+        try:
+            legs.append(route(graph, start, end, constraints))
+        except NoRoute as error:
+            raise NoRoute(f"leg {index+1} ({start} to {end}): {error}") from error
+    return {
+        "nodes": legs[0]["nodes"]
+        + [node for leg in legs[1:] for node in leg["nodes"][1:]],
+        "distance": round(sum(leg["distance"] for leg in legs), 3),
+        "cost": round(sum(leg["cost"] for leg in legs), 3),
+        "legs": legs,
+        "features": [feature for leg in legs for feature in leg["features"]],
+    }
