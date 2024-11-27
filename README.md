@@ -30,3 +30,14 @@ python -m accesspath.cli sample/map.json entrance lobby --avoid-stairs --alterna
 Closure pairs are directed; include the reverse pair for a two-way closure, and use actual endpoint names from the map. `reroute(graph, start, end, closures, constraints)` compares a baseline with the remaining permitted route, reports detour distance, and explicitly reports when closures leave no route. It never changes the caller's graph.
 
 Tests cover directional closures, unreachable routes, loopless alternative ordering, mobility restrictions, invalid closures, and path-count limits. The CLI, Python package, and TypeScript presentation helpers are all source-bearing components.
+
+## Reachability and connection outages
+
+```sh
+python -m accesspath.cli sample/map.json entrance lobby --avoid-stairs --reachable-budget 300
+python -m accesspath.cli sample/map.json entrance lobby --avoid-stairs --reachable-budget 300 --outage-impact
+```
+
+Use actual endpoint names from your map. With `--reachable-budget`, the destination argument is unused: the report covers every reachable node from the start. Budgets are weighted routing costs, not estimated travel time. Results include distance, cost, and reconstructed paths; excluded nodes remain explicit. Mobility constraints apply throughout the catchment.
+
+`reachability.py` also provides `outage_impact(..., edges=[('a','b')])`. Each directed closure is compared independently against the same baseline, reporting lost destinations and additional route cost. Reverse directions remain open unless separately specified. Analysis is read-only and bounded to 500 candidate connections. Zero-weight profiles and graph cycles are covered by regression checks. Accessibility depends on the map data and selected constraints; no terrain conditions are inferred.
