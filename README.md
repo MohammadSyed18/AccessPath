@@ -1,7 +1,16 @@
-# AccessPath
+# accesspath
 
-An accessibility-aware route-planning prototype over synthetic maps. Python provides weighted pathfinding, mobility profiles, map/closure validation, route alternatives, and explanations. TypeScript validates results, compares tradeoffs, produces landmark directions, and creates screen-reader-friendly route or failure messages.
+routing with stairs, elevators, closures, rough surfaces etc.
 
-Run `python3.12 -m unittest discover -s tests -v`, `python3.12 -m accesspath.cli sample/map.json entrance lobby --avoid-stairs`, `npm install`, `npm test`, and `npm run build`.
+Python for weighted paths / mobility profiles.
+TypeScript for comparisons, landmark directions, screen-reader output.
 
-Map data is synthetic. This is not a navigation safety service; it has no live closure feed, geolocation, or guarantee that a modeled feature remains available.
+```sh
+python3.12 -m unittest discover -s tests -v
+python3.12 -m accesspath.cli sample/map.json entrance lobby --avoid-stairs
+npm install
+npm test
+npm run build
+```
+
+the maps are synthetic. there is no GPS or live closure feed, so this is a prototype for exploring routing constraints, not a navigation safety service.
