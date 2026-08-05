@@ -1,0 +1,4 @@
+export type Route={nodes:string[];distance:number;cost:number;features:string[];explanation:string};
+export function validateRoute(v:unknown):Route{if(!v||typeof v!=="object")throw new Error("invalid route");const r=v as Route;if(!Array.isArray(r.nodes)||r.nodes.length<2||!Number.isFinite(r.distance)||!Array.isArray(r.features)||typeof r.explanation!=="string")throw new Error("invalid route");return r;}
+export function accessibleSummary(route:Route){const features=[...new Set(route.features)].join(", ")||"standard paths";return `Route from ${route.nodes[0]} to ${route.nodes.at(-1)}. Distance ${route.distance}. Uses ${features}. ${route.explanation}.`}
+export function unavailable(start:string,end:string,reason:string){return{role:"alert",message:`No accessible route from ${start} to ${end}. ${reason}`}}
