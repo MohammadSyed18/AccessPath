@@ -1,6 +1,6 @@
 # AccessPath
 
-An accessibility-aware route-planning prototype over synthetic maps. Python performs weighted shortest-path search across distance, surface difficulty, stairs, ramps, elevators, and closures while enforcing user constraints and explaining route choice. TypeScript validates results and creates screen-reader-friendly success and unavailable-route messages.
+An accessibility-aware route-planning prototype over synthetic maps. Python provides weighted pathfinding, mobility profiles, map/closure validation, route alternatives, and explanations. TypeScript validates results, compares tradeoffs, produces landmark directions, and creates screen-reader-friendly route or failure messages.
 
 Run `python3.12 -m unittest discover -s tests -v`, `python3.12 -m accesspath.cli sample/map.json entrance lobby --avoid-stairs`, `npm install`, `npm test`, and `npm run build`.
 
