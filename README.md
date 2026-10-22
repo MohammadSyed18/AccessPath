@@ -1,8 +1,9 @@
-# AccessPath
+# accesspath
 
-A route-planning experiment with stairs, elevators, closures, and surface difficulty as part of the route cost.
+routing with stairs, elevators, closures, rough surfaces etc.
 
-Python handles weighted pathfinding and mobility profiles. TypeScript compares the results and turns them into landmark directions or screen-reader-friendly explanations.
+Python for weighted paths / mobility profiles.
+TypeScript for comparisons, landmark directions, screen-reader output.
 
 ```sh
 python3.12 -m unittest discover -s tests -v
@@ -12,4 +13,4 @@ npm test
 npm run build
 ```
 
-The maps are synthetic. There is no GPS or live closure feed, so this is a prototype for exploring routing constraints, not a navigation safety service.
+the maps are synthetic. there is no GPS or live closure feed, so this is a prototype for exploring routing constraints, not a navigation safety service.
